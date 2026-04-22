@@ -1,0 +1,3 @@
+"""Quant-Alpha: 5-Layer Quantitative Trading System."""
+
+__version__ = "0.1.0"
