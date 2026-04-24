@@ -25,3 +25,34 @@
 
 ## Dependencies
 - pandas, numpy, scipy, scikit-learn, cvxpy, anthropic, structlog, redis, psycopg2-binary, sqlalchemy, prefect, tenacity, pydantic-settings, duckdb
+
+## Subagent Governance (CRITICAL)
+
+### 병렬 실행 제한
+- 동시 실행 가능한 서브에이전트 최대: **4개**
+- 이유: 5개 이상 동시 실행 시 토큰 소모가 급증하고 Claude Pro 사용량 한도를 20분 내 소진할 수 있음
+
+### 자동 실행 금지
+- 서브에이전트를 무인(headless)으로 연속 실행 절대 금지
+- CI/CD나 수동 호출만 허용
+- /add-factor 등 커스텀 명령어도 사용자 확인 후 실행
+
+### 레이어 분리 원칙
+- 운영 레이어(Prefect Flow, Python 실행 코드)는 서브에이전트 사용 금지
+- 서브에이전트는 개발 레이어(코드 생성/리뷰/테스트)에서만 사용
+
+### 토큰 예산 모니터링
+- Claude Pro 사용량 대시보드를 주기적으로 확인
+- 일일 사용량이 80%를 넘으면 당일 서브에이전트 사용 중단
+- 주간 사용량 제한에 도달 시 다음 주까지 개발 중단
+
+### 에이전트별 도구 권한 준수
+- data-connector: Bash/WebFetch 허용 (실제 API 호출 검증)
+- factor-calculator: Bash 금지 (실행은 test-writer)
+- test-writer: Bash 허용 (pytest 실행)
+- ic-validator: Bash 허용 (백테스트 실행)
+- code-reviewer: Read/Grep/Glob만 (읽기 전용)
+- prefect-worker: Bash 허용 (prefect 명령어)
+
+> ⚠ 실제 비용 사고 사례: 49개 서브에이전트 2.5시간 병렬 실행 → $8,000~15,000 청구.
+> 23개 서브에이전트 3일 무인 실행 → $47,000 청구. 상한 4개 규칙은 타협 불가.
