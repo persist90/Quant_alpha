@@ -37,3 +37,8 @@ model: claude-sonnet-4-6
 - prefect deploy 명령어로 Prefect Cloud에 배포
 - deploy/prefect/ 디렉토리에 prefect.yaml 작성
 - 워커 풀 이름: quant-alpha-pool
+
+# 금지 사항
+- 주문 실행 로직 직접 구현 금지 (L4 사용자 코드 호출만)
+- 안전장치 로직 재구현 금지 (src/harness/ 기존 모듈 사용)
+- 스케줄을 CLAUDE.md 기본값과 다르게 변경 시 사용자 확인 필수

@@ -28,8 +28,15 @@ model: claude-sonnet-4-6
 - 가중치 추가: IC > 0.05 AND 모든 Walk-Forward 구간에서 양(+)의 IC
 - 기각: IC < 0.01 OR t-stat < 1.5 OR IC Decay > 80%
 
+# 포트폴리오 최적화 검증
+strategy-optimizer가 구현한 최적화도 이 에이전트가 검증:
+- 백테스트 수행 (동일 5년 기간)
+- 제약조건 준수율 확인
+- Turnover 평균 확인 (목표 < 60%)
+- 섹터 편향 분포 확인
+
 # 리포트 출력
-- 위치: backtests/results/{date}_{factor_name}/
+- 위치: backtests/results/{date}_{factor_name}/ 또는 {date}_{strategy_name}/
 - 형식: HTML (plotly 차트 포함) + JSON (지표 요약)
 - 필수 차트: 누적 수익률 (전략 vs KOSPI200), IC 시계열, 월별 히트맵
 - 요약 보고서: 채택/기각 판단 명시 + 근거

@@ -30,29 +30,53 @@
 
 ### 병렬 실행 제한
 - 동시 실행 가능한 서브에이전트 최대: **4개**
-- 이유: 5개 이상 동시 실행 시 토큰 소모가 급증하고 Claude Pro 사용량 한도를 20분 내 소진할 수 있음
+- 초과 시 토큰 소모 급증으로 Claude Pro 한도 20분 내 소진 위험
+- 실제 사고 사례: 49개 병렬 실행 시 $8,000~15,000 청구, 23개 3일 무인 실행 시 $47,000 청구
 
 ### 자동 실행 금지
 - 서브에이전트를 무인(headless)으로 연속 실행 절대 금지
 - CI/CD나 수동 호출만 허용
-- /add-factor 등 커스텀 명령어도 사용자 확인 후 실행
+- /add-factor, /optimize-portfolio 등 커스텀 명령어도 사용자 확인 후 실행
+
+### 레이어별 담당 에이전트 매핑
+
+| 레이어 | 담당 에이전트 | 비고 |
+|--------|-------------|------|
+| L1 단순 수집 | data-connector | |
+| L1 복잡 파싱 | complex-parser | DART 재무제표 등 |
+| L2 팩터 계산 | factor-calculator | IC 계산은 ic-validator |
+| L2 검증 | ic-validator | |
+| L3 최적화 | strategy-optimizer | |
+| **L4 주문 실행** | **없음 — 사용자 직접** | code-reviewer가 검증 |
+| L5 오케스트레이션 | prefect-worker | |
+| 품질 (테스트) | test-writer | |
+| 품질 (리뷰) | code-reviewer | 읽기 전용 |
 
 ### 레이어 분리 원칙
-- 운영 레이어(Prefect Flow, Python 실행 코드)는 서브에이전트 사용 금지
-- 서브에이전트는 개발 레이어(코드 생성/리뷰/테스트)에서만 사용
+- 운영 레이어(Prefect Flow, Python 실행 코드)는 서브에이전트 개입 금지
+- 서브에이전트는 개발 레이어(코드 생성/리뷰/테스트)에서만 활성화
+- L4 주문 실행은 사용자 직접 구현 (실제 자금 투입 영역)
 
 ### 토큰 예산 모니터링
-- Claude Pro 사용량 대시보드를 주기적으로 확인
-- 일일 사용량이 80%를 넘으면 당일 서브에이전트 사용 중단
-- 주간 사용량 제한에 도달 시 다음 주까지 개발 중단
+- Claude Pro 사용량 대시보드 주기적 확인
+- 일일 사용량이 80% 넘으면 당일 서브에이전트 사용 중단
+- 주간 사용량 한도 도달 시 다음 주까지 개발 중단 (Paper Trading 단계로 전환)
 
 ### 에이전트별 도구 권한 준수
-- data-connector: Bash/WebFetch 허용 (실제 API 호출 검증)
-- factor-calculator: Bash 금지 (실행은 test-writer)
-- test-writer: Bash 허용 (pytest 실행)
-- ic-validator: Bash 허용 (백테스트 실행)
-- code-reviewer: Read/Grep/Glob만 (읽기 전용)
-- prefect-worker: Bash 허용 (prefect 명령어)
 
-> ⚠ 실제 비용 사고 사례: 49개 서브에이전트 2.5시간 병렬 실행 → $8,000~15,000 청구.
-> 23개 서브에이전트 3일 무인 실행 → $47,000 청구. 상한 4개 규칙은 타협 불가.
+| 에이전트 | 허용 도구 | 금지 도구 |
+|---------|---------|---------|
+| data-connector | Read, Write, Edit, Bash, Grep, Glob | WebFetch 금지 |
+| complex-parser | Read, Write, Edit, Bash, Grep, Glob | — |
+| factor-calculator | Read, Write, Edit, Grep, Glob | Bash 금지 |
+| strategy-optimizer | Read, Write, Edit, Grep, Glob | Bash 금지 |
+| test-writer | Read, Write, Edit, Bash, Grep | — |
+| ic-validator | Read, Write, Edit, Bash, Grep | — |
+| code-reviewer | Read, Grep, Glob | Write, Edit, Bash 금지 |
+| prefect-worker | Read, Write, Edit, Bash, Grep | — |
+
+### L4 자금 투입 영역 특별 규칙
+- L4 주문 실행 코드는 사용자가 직접 작성
+- Claude Code에게 생성 요청 시에도 라인별 리뷰 필수
+- code-reviewer로 2회 이상 리뷰 후 머지
+- TRADING_MODE=live 환경변수 없이는 실주문 불가 이중 잠금

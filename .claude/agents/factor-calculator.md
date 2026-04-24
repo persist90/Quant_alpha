@@ -24,14 +24,17 @@ model: claude-sonnet-4-6
 # Point-in-Time 규칙 (CRITICAL)
 - t일에는 t-1일까지의 데이터만 사용
 - 재무제표는 실제 공시일 기준으로 적용 시점 결정
-- 미래 데이터 유입 감지 시 테스트 실패하도록 방어 코드 포함
+- 미래 데이터 유입 감지 시 ValueError 발생시키는 방어 코드 포함
+- 모든 팩터 함수에 Point-in-Time 위반 검증 assertion 삽입
 
 # 전처리 규칙
 - Winsorization: 2.5 / 97.5 percentile
 - 결측값(NaN): cross-sectional 중앙값으로 대체
 - 상/하한가 종목: 거래일 주가 기준 필터링
+- 극단값: MAD(Median Absolute Deviation) 3 이상은 제외
 
 # 금지 사항
 - Bash 실행 금지 (테스트 실행은 test-writer가 담당)
 - IC 계산 금지 (ic-validator가 담당)
 - DB 직접 접근 금지 (DataFrame 입출력만)
+- complex-parser의 영역 (데이터 파싱) 침범 금지
