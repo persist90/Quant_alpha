@@ -1,0 +1,305 @@
+{
+  "id": null,
+  "uid": "l1-market-data-monitor",
+  "title": "L1 Market Data Monitor",
+  "description": "KOSDAQ 150 L1 수집 파이프라인 상태 및 데이터 품질 대시보드",
+  "tags": ["l1", "market-data", "kosdaq"],
+  "timezone": "Asia/Seoul",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-7d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "ticker",
+        "label": "Ticker",
+        "type": "query",
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32" },
+        "query": "SELECT DISTINCT ticker FROM daily_price ORDER BY ticker",
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {}
+      }
+    ]
+  },
+  "__inputs": [
+    {
+      "name": "DS_TIMESCALEDB",
+      "label": "TimescaleDB",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Pipeline Status",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "마지막 일봉 수집 시간",
+      "gridPos": { "x": 0, "y": 1, "w": 8, "h": 4 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsLocal",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0 },
+              { "color": "green", "value": 0 }
+            ]
+          },
+          "mappings": []
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT EXTRACT(EPOCH FROM max(last_updated)) * 1000 AS \"time\"\nFROM daily_price",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "오늘 수집된 일봉 종목 수",
+      "gridPos": { "x": 8, "y": 1, "w": 8, "h": 4 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "green", "value": 140 }
+            ]
+          },
+          "mappings": []
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(DISTINCT ticker) AS \"일봉 종목 수\"\nFROM daily_price\nWHERE date = (SELECT max(date) FROM daily_price)",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "오늘 수집된 4H봉 종목 수",
+      "gridPos": { "x": 16, "y": 1, "w": 8, "h": 4 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32" },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "green", "value": 50 }
+            ]
+          },
+          "mappings": []
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(DISTINCT ticker) AS \"4H봉 종목 수\"\nFROM intraday_price_4h\nWHERE datetime >= NOW() - INTERVAL '1 day'",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Data Visualizer — $ticker",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 1 }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "$ticker 종가 (Close)",
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 8 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32" },
+      "options": {
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": [] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "pointSize": 5,
+            "showPoints": "auto"
+          },
+          "thresholds": { "mode": "absolute", "steps": [] },
+          "mappings": []
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT\n  date AS \"time\",\n  close AS \"종가\"\nFROM daily_price\nWHERE\n  ticker = '$ticker'\n  AND $__timeFilter(date)\nORDER BY date",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "barchart",
+      "title": "$ticker 거래량 (Volume)",
+      "gridPos": { "x": 0, "y": 14, "w": 24, "h": 6 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32" },
+      "options": {
+        "barWidth": 0.9,
+        "groupWidth": 0.7,
+        "fillOpacity": 80,
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": [] },
+        "xField": "time"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "thresholds": { "mode": "absolute", "steps": [] },
+          "mappings": []
+        }
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT\n  date AS \"time\",\n  volume AS \"거래량\"\nFROM daily_price\nWHERE\n  ticker = '$ticker'\n  AND $__timeFilter(date)\nORDER BY date",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Data Quality Alerts",
+      "collapsed": false,
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 1 }
+    },
+    {
+      "id": 21,
+      "type": "table",
+      "title": "결측치 감지 (volume=0 또는 close NULL)",
+      "gridPos": { "x": 0, "y": 21, "w": 12, "h": 8 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32" },
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "displayMode": "auto" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "date" },
+            "properties": [{ "id": "unit", "value": "dateTimeAsLocal" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "volume" },
+            "properties": [
+              { "id": "custom.displayMode", "value": "color-background" },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "yellow", "value": 1 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT\n  date,\n  ticker,\n  close,\n  volume,\n  CASE WHEN close IS NULL THEN 'close NULL' WHEN volume = 0 THEN 'volume 0' END AS \"이상 유형\"\nFROM daily_price\nWHERE\n  date >= CURRENT_DATE - INTERVAL '5 days'\n  AND (close IS NULL OR volume = 0)\nORDER BY date DESC, ticker",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "table",
+      "title": "미수집 종목 감지 (최근 수집일 기준 누락)",
+      "gridPos": { "x": 12, "y": 21, "w": 12, "h": 8 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "P40AE60E18F02DE32" },
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "displayMode": "auto" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "마지막_수집일" },
+            "properties": [{ "id": "unit", "value": "dateTimeAsLocal" }]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "rawSql": "WITH latest AS (\n  SELECT max(date) AS last_date FROM daily_price\n),\nactive_tickers AS (\n  SELECT DISTINCT ticker FROM daily_price\n),\ntoday_tickers AS (\n  SELECT DISTINCT ticker FROM daily_price d, latest l WHERE d.date = l.last_date\n)\nSELECT\n  a.ticker,\n  max(d.date) AS \"마지막_수집일\",\n  l.last_date AS \"최근_수집기준일\"\nFROM active_tickers a\nJOIN latest l ON true\nLEFT JOIN daily_price d ON a.ticker = d.ticker\nWHERE a.ticker NOT IN (SELECT ticker FROM today_tickers)\nGROUP BY a.ticker, l.last_date\nORDER BY a.ticker",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
