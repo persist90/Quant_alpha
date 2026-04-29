@@ -90,7 +90,7 @@ def _prepare_daily_records(df: pd.DataFrame) -> list[dict]:
     """DataFrame → daily_price INSERT 레코드 리스트 변환."""
     records = []
     for idx, row in df.iterrows():
-        dt = idx if isinstance(idx, date) else idx.date()
+        dt = idx if type(idx) is date else pd.Timestamp(idx).tz_convert("Asia/Seoul").date()
         records.append({
             "date": dt,
             "ticker": str(row["ticker"]),

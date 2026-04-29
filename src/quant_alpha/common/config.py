@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     # AI
     anthropic_api_key: str = ""
 
+    # KRX 인증 (pykrx 내부에서 os.environ으로 읽음)
+    krx_id: str = ""
+    krx_pw: str = ""
+
     # Notifications
     slack_webhook_url: str = ""
 
