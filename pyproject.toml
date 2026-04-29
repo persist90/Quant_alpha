@@ -9,6 +9,10 @@ packages = [{ include = "quant_alpha", from = "src" }]
 [tool.poetry.dependencies]
 python = "^3.11"
 
+# Data Collection
+pykrx = ">=1.0"
+mojito2 = ">=0.1"
+
 # Data & Computation
 pandas = "^2.2"
 numpy = "^1.26"

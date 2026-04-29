@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # PostgreSQL
     postgres_user: str = "quant"
@@ -18,10 +18,11 @@ class Settings(BaseSettings):
     # Trading Safety
     trading_mode: str = "paper"  # paper | live
 
-    # Broker
+    # Broker (한국투자증권 KIS)
     kis_app_key: str = ""
     kis_app_secret: str = ""
-    kis_account_no: str = ""
+    kis_account_no: str = ""       # CANO: 계좌번호
+    kis_acnt_prdt_cd: str = "01"   # ACNT_PRDT_CD: 계좌상품코드
 
     # AI
     anthropic_api_key: str = ""
