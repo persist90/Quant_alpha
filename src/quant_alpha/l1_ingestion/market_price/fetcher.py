@@ -1,6 +1,6 @@
 """L1 시장 데이터 수집기: pykrx(일봉) + 한투 API mojito2(4시간봉)."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -36,7 +36,8 @@ class DailyPriceFetcher:
         """코스닥 150 구성 종목 티커 리스트 반환."""
         from pykrx import stock
 
-        tickers = stock.get_index_portfolio_deposit_file(KOSDAQ_150_INDEX_CODE)
+        # end_date를 명시하여 pykrx 내부 get_nearest_business_day_in_a_week() 호출 방지
+        tickers = stock.get_index_portfolio_deposit_file(KOSDAQ_150_INDEX_CODE, self.end_date)
         log.info("kosdaq150_tickers_fetched", count=len(tickers))
         return list(tickers)
 
@@ -95,8 +96,12 @@ class Intraday4HFetcher:
         self.end_date = end_date
         self._broker = self._init_broker()
 
-    def _init_broker(self) -> object:
-        """mojito2 KoreaInvestment 브로커 초기화."""
+    def _init_broker(self) -> object | None:
+        """mojito2 KoreaInvestment 브로커 초기화. KIS 키 미설정 시 None 반환."""
+        if not settings.kis_app_key or not settings.kis_app_secret:
+            log.warning("kis_credentials_missing", reason="KIS API 키가 설정되지 않아 4H봉 수집을 건너뜁니다.")
+            return None
+
         import mojito
 
         acc_no = f"{settings.kis_account_no}-{settings.kis_acnt_prdt_cd}"
@@ -140,6 +145,10 @@ class Intraday4HFetcher:
 
     def fetch(self, tickers: list[str]) -> pd.DataFrame:
         """지정 종목 리스트에 대해 4H봉 수집 후 통합 DataFrame 반환."""
+        if not tickers or self._broker is None:
+            log.warning("intraday_skipped", tickers=len(tickers), broker_ready=self._broker is not None)
+            return pd.DataFrame()
+
         fetched_at = datetime.now(tz=KST)
         frames: list[pd.DataFrame] = []
 
