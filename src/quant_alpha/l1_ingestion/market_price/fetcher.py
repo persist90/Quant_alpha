@@ -100,6 +100,7 @@ class DailyPriceFetcher:
                     frames.append(df)
             except Exception as e:
                 log.error("daily_fetch_failed", date=date_str, error=str(e))
+            time.sleep(0.2)  # pykrx KRX 세션 보호 — 연속 호출 시 세션 만료 방지
 
         if not frames:
             return pd.DataFrame()

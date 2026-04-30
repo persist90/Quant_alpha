@@ -105,3 +105,9 @@ logs/
 *.p12
 *.pfx
 secrets/
+
+# KIS API token cache
+token.dat
+
+# Temp scripts
+ai_score.py
