@@ -12,10 +12,11 @@ python = "^3.11"
 # Data Collection
 pykrx = ">=1.0"
 mojito2 = ">=0.1"
+yfinance = ">=0.2"
 
 # Data & Computation
 pandas = "^2.2"
-numpy = "^1.26"
+numpy = ">=1.26"
 scipy = "^1.13"
 scikit-learn = "^1.5"
 cvxpy = "^1.5"

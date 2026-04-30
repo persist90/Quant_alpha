@@ -112,6 +112,105 @@ class DailyPriceFetcher:
         return result
 
 
+class HistoricalIntraday4HFetcher:
+    """yfinance 기반 KOSDAQ 150 역사적 4H봉 수집기.
+
+    Yahoo Finance 제약: 1H 데이터 최대 730일 지원.
+    KOSDAQ 티커 형식: {6자리 코드}.KQ (예: 035720.KQ)
+    1H 데이터 수신 후 4H로 리샘플. trading_value는 yfinance 미지원으로 미포함.
+    """
+
+    MAX_DAYS = 730
+    BATCH_SIZE = 20
+
+    def __init__(self, start_date: str, end_date: str) -> None:
+        self.start_date = start_date
+        self.end_date = end_date
+
+    def fetch(self, tickers: list[str]) -> pd.DataFrame:
+        """KOSDAQ 150 역사적 4H봉 수집 (yfinance 730일 한도 내)."""
+        try:
+            import yfinance as yf
+        except ImportError:
+            log.error("yfinance_not_installed", hint="pip install yfinance")
+            return pd.DataFrame()
+
+        start_dt = pd.Timestamp(self.start_date, tz=KST)
+        end_dt = pd.Timestamp(self.end_date, tz=KST)
+        max_start = end_dt - pd.Timedelta(days=self.MAX_DAYS)
+
+        if start_dt < max_start:
+            log.warning(
+                "yfinance_4h_limit",
+                requested_start=self.start_date,
+                actual_start=max_start.strftime("%Y%m%d"),
+                reason="yfinance 1H 데이터 최대 730일 제한",
+            )
+            start_dt = max_start
+
+        yf_start = start_dt.strftime("%Y-%m-%d")
+        yf_end = (end_dt + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        yf_tickers = [f"{t}.KQ" for t in tickers]
+        fetched_at = _now_kst()
+        frames: list[pd.DataFrame] = []
+
+        for i in range(0, len(yf_tickers), self.BATCH_SIZE):
+            batch = yf_tickers[i : i + self.BATCH_SIZE]
+            try:
+                raw = yf.download(
+                    batch,
+                    start=yf_start,
+                    end=yf_end,
+                    interval="1h",
+                    group_by="ticker",
+                    auto_adjust=True,
+                    progress=False,
+                )
+                if raw.empty:
+                    continue
+
+                for yf_ticker in batch:
+                    ticker_code = yf_ticker.replace(".KQ", "")
+                    try:
+                        df_t = raw[yf_ticker].copy() if len(batch) > 1 else raw.copy()
+                        df_t = df_t.dropna(subset=["Open"])
+                        if df_t.empty:
+                            continue
+
+                        df_t = df_t.rename(columns={
+                            "Open": "open", "High": "high", "Low": "low",
+                            "Close": "close", "Volume": "volume",
+                        })[["open", "high", "low", "close", "volume"]]
+
+                        if df_t.index.tz is None:
+                            df_t.index = df_t.index.tz_localize(KST)
+                        else:
+                            df_t.index = df_t.index.tz_convert(KST)
+
+                        df_4h = (
+                            df_t.resample("4h", offset="9h", closed="left", label="left")
+                            .agg({"open": "first", "high": "max", "low": "min",
+                                  "close": "last", "volume": "sum"})
+                            .dropna(subset=["open"])
+                        )
+                        df_4h["ticker"] = ticker_code
+                        df_4h["fetched_at"] = fetched_at
+                        frames.append(df_4h)
+                    except Exception as e:
+                        log.error("hist_4h_ticker_failed", ticker=yf_ticker, error=str(e))
+            except Exception as e:
+                log.error("hist_4h_batch_failed", batch_size=len(batch), error=str(e))
+            time.sleep(1.0)  # yfinance rate limit 보호
+
+        if not frames:
+            return pd.DataFrame()
+
+        result = pd.concat(frames)
+        result.index.name = "datetime"
+        log.info("historical_4h_fetched", tickers=len(frames), rows=len(result))
+        return result
+
+
 class Intraday4HFetcher:
     """KIS API 분봉조회(당일)를 활용한 4시간봉 수집기.
 
