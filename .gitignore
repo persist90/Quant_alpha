@@ -111,3 +111,4 @@ token.dat
 
 # Temp scripts
 ai_score.py
+quant_db_backup.dump
