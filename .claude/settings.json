@@ -4,10 +4,10 @@
       "Bash(git init *)",
       "Bash(git add *)",
       "Bash(git branch *)",
-      "Bash(git check-ignore *)",
-      "Bash(brew install *)",
-      "Bash(curl -sSL https://install.python-poetry.org)",
-      "Bash(/opt/homebrew/bin/python3.11 -)"
+      "Bash(git check-ignore *)"
     ]
+  },
+  "env": {
+    "PYTHON_PATH": "C:\\Users\\aiueo\\anaconda3\\python.exe"
   }
 }

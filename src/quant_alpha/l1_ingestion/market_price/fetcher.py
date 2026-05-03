@@ -120,7 +120,7 @@ class HistoricalIntraday4HFetcher:
     1H 데이터 수신 후 4H로 리샘플. trading_value는 yfinance 미지원으로 미포함.
     """
 
-    MAX_DAYS = 730
+    MAX_DAYS = 728  # yfinance 730일 한도에서 오늘 기준 경계 충돌 방지 (2일 여유)
     BATCH_SIZE = 20
 
     def __init__(self, start_date: str, end_date: str) -> None:

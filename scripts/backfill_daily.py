@@ -102,7 +102,7 @@ def run_4h_backfill(tickers: list[str], loader: PriceLoader) -> int:
     print(f"\n{'='*60}")
     print(f"KOSDAQ 150 4H봉 역사적 수집 (yfinance)")
     print(f"기간: {start} ~ {end}  |  종목: {len(tickers)}개")
-    print(f"주의: yfinance 1H 데이터 최대 730일 지원 — 그 이전 4H 데이터는 미수집")
+    print(f"주의: yfinance 1H 데이터 최대 730일 지원 - 그 이전 4H 데이터는 미수집")
     print(f"예상 소요시간: {len(tickers) // 20 * 1 + 5}분 내외")
     print(f"{'='*60}\n")
 
